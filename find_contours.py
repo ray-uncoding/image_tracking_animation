@@ -1,7 +1,11 @@
 import cv2
 
-img = cv2.imread('img_files/boki.jpg')  # 讀圖
-img = cv2.resize(img, (0, 0), fx=2.0, fy=2.0)
+#img = cv2.imread('img_files/boki.jpg')  # 讀圖
+
+
+
+img = cv2.imread('img_files/blue_triangle (3).png')  # 讀圖
+img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
 imgcontours = img.copy()
 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # 轉灰階
 canny = cv2.Canny(img, 20, 400)  # 設定邊緣域值

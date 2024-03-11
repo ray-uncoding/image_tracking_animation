@@ -6,11 +6,12 @@ import numpy as np
 def empty(v):
     pass
 
-#img = cv2.imread('img_files/boki.jpg')  # 取得圖片
-#img = cv2.resize(img, (0, 0), fx=2.0, fy=2.0)  # 縮放
-#HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-cap = cv2.VideoCapture(1)
+#cap = cv2.VideoCapture(1)
+
+img = cv2.imread('img_files/orange_rectangle (3).png')  # 取得圖片
+img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)  # 縮放
+HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
 # 使用 cv2.WINDOW_NORMAL 以允許視窗大小的調整
 cv2.namedWindow('TrackBar', cv2.WINDOW_NORMAL)
@@ -24,7 +25,7 @@ cv2.createTrackbar("Val Min", "TrackBar", 0, 255, empty)
 cv2.createTrackbar("Val Max", "TrackBar", 255, 255, empty)
 
 while True:
-    ret, img = cap.read()
+    #ret, img = cap.read()
     HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     
     h_min = cv2.getTrackbarPos("Hue Min", "TrackBar")
