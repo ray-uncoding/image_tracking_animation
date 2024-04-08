@@ -184,7 +184,7 @@ def main():
         found_yellow = False
         found_green = False
 
-        cv2.imshow('Processed Frame', frame)
+        cv2.imshow('Processed Frame, press q to leave', frame)
         if cv2.waitKey(20) & 0xFF == ord('q'):
             break
 
