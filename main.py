@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from read_vedeo import play_video
 
+
 def initialize_camera(camera_index):
     # 開啟攝像頭
     cap = cv2.VideoCapture(camera_index)
@@ -12,20 +13,28 @@ def initialize_camera(camera_index):
 
     return cap
 
+
 def release_camera(cap):
     # 釋放攝像頭
     if cap is not None:
         cap.release()
 
+
 def main():
-    camera_index = 0  # 調整這個數值以匹配你的攝像頭
-    video_path = 'vedeo_files/fried_riceball.mp4'
-    threshold_area = 100  # 調整此數值以控制橘色長方形的面積閾值
-    play_speed = 30  # 調整此數值以控制撥放速度，數值越小速度越快
+    camera_index = 0 
+    video_path_01 = 'video_files/fried_riceball.mp4'
+    threshold_area = 100 
+    play_speed = 30
 
-    found_orange_rectangle = False  # 追蹤是否找到符合條件的橘色長方形
-    found_blue_triangle = False  # 追蹤是否找到符合條件的藍色三角形
-
+    found_blue = False
+    found_blue_green = False
+    found_red = False
+    found_orange = False
+    found_pink = False
+    found_perple = False
+    found_yellow = False
+    found_green = False
+    
     # 初始化攝像頭
     cap = initialize_camera(camera_index)
     if cap is None:
@@ -34,82 +43,151 @@ def main():
     while True:
         # 讀取一帧影像
         ret, frame = cap.read()
-
         if not ret:
             print("Error: Unable to read a frame from the camera.")
             break
-
         # 將影像轉換成HSV色彩空間
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-        # 定義橘色的HSV範圍
-        lower_orange = np.array([5, 100, 100])
-        upper_orange = np.array([15, 255, 255])
-        
-        # 定義藍色的HSV範圍
-        lower_blue = np.array([87, 53, 98])
-        upper_blue = np.array([109, 154, 182])
+        lower_blue = np.array([91, 59, 135])  # 91 118 59 172 135 255
+        upper_blue = np.array([118, 172, 255])
 
-        # 透過色彩過濾找到橘色區域
-        mask_orange = cv2.inRange(hsv, lower_orange, upper_orange)
+        lower_blue_green = np.array([73, 44, 145])  # 73 129 44 165 145 224
+        upper_blue_green = np.array([129, 165, 224])
 
-        # 透過色彩過濾找到藍色區域
-        mask_blue = cv2.inRange(hsv, lower_blue, upper_blue)
+        lower_red = np.array([0, 48, 181])  # 0 21 48 130 181 243
+        upper_red = np.array([21, 130, 243])
 
-        # 找到橘色區域的輪廓
-        contours_orange, _ = cv2.findContours(
-            mask_orange, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        lower_orange = np.array([6, 89, 196])  # 6 24 89 189 196 247
+        upper_orange = np.array([24, 189, 247])
 
-        # 找到藍色區域的輪廓
+        lower_pink = np.array([137, 43, 183])  # 137 178 43 103 183 251
+        upper_pink = np.array([178, 103, 251])
+
+        lower_perple = np.array([146, 39, 124])  # 146 179 39 118 124 194
+        upper_perple = np.array([179, 118, 194])
+
+        lower_yellow = np.array([11, 55, 160])  # 11 30 55 153 160 225
+        upper_yellow = np.array([30, 153, 225])
+
+        lower_green = np.array([30, 84, 150])  # 30 49 84 137 150 217
+        upper_green = np.array([49, 137, 217])
+
+        mask_blue       = cv2.inRange(hsv, lower_blue, upper_blue)
+        mask_blue_green = cv2.inRange(hsv, lower_blue_green, upper_blue_green)
+        mask_red        = cv2.inRange(hsv, lower_red, upper_red)
+        mask_orange     = cv2.inRange(hsv, lower_orange, upper_orange)
+        mask_pink       = cv2.inRange(hsv, lower_pink, upper_pink)
+        mask_perple     = cv2.inRange(hsv, lower_perple, upper_perple)
+        mask_yellow     = cv2.inRange(hsv, lower_yellow, upper_yellow)
+        mask_green      = cv2.inRange(hsv, lower_green, upper_green)
+
         contours_blue, _ = cv2.findContours(
             mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_blue_green, _ = cv2.findContours(
+            mask_blue_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_red, _ = cv2.findContours(
+            mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_orange, _ = cv2.findContours(
+            mask_orange, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_pink, _ = cv2.findContours(
+            mask_pink, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_perple, _ = cv2.findContours(
+            mask_perple, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_yellow, _ = cv2.findContours(
+            mask_yellow, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_green, _ = cv2.findContours(
+            mask_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # 遍歷橘色輪廓，尋找橘色長方形
-        for contour in contours_orange:
-            # 計算輪廓的面積
+        for contour in contours_blue:
             area = cv2.contourArea(contour)
-
-            # 如果面積大於閾值，框選起來
             if area > threshold_area:
                 x, y, w, h = cv2.boundingRect(contour)
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                found_orange_rectangle = True
+                found_blue = True
             else:
-                found_orange_rectangle = False
-
-        # 遍歷藍色輪廓，尋找藍色三角形
-        for contour in contours_blue:
-            # 計算輪廓的面積
+                found_blue = False
+        
+        for contour in contours_blue_green:
             area = cv2.contourArea(contour)
-
-            # 如果面積大於閾值，進一步檢查是否是三角形
             if area > threshold_area:
-                epsilon = 0.02 * cv2.arcLength(contour, True)
-                approx = cv2.approxPolyDP(contour, epsilon, True)
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                found_blue_green = True
+            else:
+                found_blue_green = False
+                
+        for contour in contours_red:
+            area = cv2.contourArea(contour)
+            if area > threshold_area:
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                found_red = True
+            else:
+                found_red = False       
+                
+        for contour in contours_orange:
+            area = cv2.contourArea(contour)
+            if area > threshold_area:
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                found_orange = True
+            else:
+                found_orange = False        
+                
+        for contour in contours_pink:
+            area = cv2.contourArea(contour)
+            if area > threshold_area:
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                found_pink = True
+            else:
+                found_pink = False        
+                
+        for contour in contours_perple:
+            area = cv2.contourArea(contour)
+            if area > threshold_area:
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                found_perple = True
+            else:
+                found_perple = False
+                
+        for contour in contours_yellow:
+            area = cv2.contourArea(contour)
+            if area > threshold_area:
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                found_yellow = True
+            else:
+                found_yellow = False        
+        
+        for contour in contours_green:
+            area = cv2.contourArea(contour)
+            if area > threshold_area:
+                x, y, w, h = cv2.boundingRect(contour)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                found_green = True
+            else:
+                found_green = False  
+                
+        #範例
+        if found_blue :
+            play_video(video_path_01, play_speed)
 
-                if len(approx) == 3:  # 如果是三角形
-                    x, y, w, h = cv2.boundingRect(contour)
-                    cv2.drawContours(frame, [contour], 0, (255, 0, 0), 2)
-                    found_blue_triangle = True
-                else:
-                    found_blue_triangle = False
+        found_blue = False
+        found_blue_green = False
+        found_red = False
+        found_orange = False
+        found_pink = False
+        found_perple = False
+        found_yellow = False
+        found_green = False
 
-        # 如果找到符合條件的橘色長方形或藍色三角形，則撥放影片
-        if found_orange_rectangle or found_blue_triangle:
-            play_video(video_path, play_speed)
-
-        # 重置追蹤變數，以便下一次迴圈重新檢測
-        found_orange_rectangle = False
-        found_blue_triangle = False
-
-        # 顯示處理後的畫面
         cv2.imshow('Processed Frame', frame)
-
-        # 按下 'q' 鍵離開迴圈
         if cv2.waitKey(20) & 0xFF == ord('q'):
             break
 
-    # 釋放攝像頭並關閉視窗
     release_camera(cap)
     cv2.destroyAllWindows()
 

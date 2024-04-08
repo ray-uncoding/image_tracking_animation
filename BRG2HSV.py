@@ -10,7 +10,7 @@ def empty(v):
 #cap = cv2.VideoCapture(1)
 
 #img = cv2.imread('img_files/orange_rectangle (3).png')  # 取得圖片
-img = cv2.imread('img_files/blue_triangle (3).png')  # 取得圖片
+img = cv2.imread('img_files/green.png')  # 取得圖片
 img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)  # 縮放
 HSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
