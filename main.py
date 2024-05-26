@@ -1,188 +1,173 @@
 import cv2
 import numpy as np
-from read_vedeo import play_video
 
+def play_video(file_name, speed):
+    cap = cv2.VideoCapture(file_name)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    cv2.namedWindow('Video Player', cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty('Video Player', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame = cv2.resize(frame, (width, height))
+
+        cv2.imshow('Video Player', frame)
+        if cv2.waitKey(int(1000 / speed)) & 0xFF != 0xFF:
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
 
 def initialize_camera(camera_index):
-    # 開啟攝像頭
     cap = cv2.VideoCapture(camera_index)
-
     if not cap.isOpened():
         print("Error: Unable to open the camera.")
         return None
-
     return cap
 
-
 def release_camera(cap):
-    # 釋放攝像頭
     if cap is not None:
         cap.release()
 
+def process_contours(contours, threshold_area, frame, color_detected):
+    for contour in contours:
+        if cv2.contourArea(contour) > threshold_area:
+            x, y, w, h = cv2.boundingRect(contour)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            color_detected.append(True)
+            return True
+    color_detected.append(False)
+    return False
 
 def main():
-    camera_index = 0 
-    video_path_01 = 'video_files/fried_riceball.mp4'
-    threshold_area = 100 
+    camera_index = 0
+    threshold_area = 100  # 最小區域閾值設定
     play_speed = 30
 
-    found_blue = False
-    found_blue_green = False
-    found_red = False
-    found_orange = False
-    found_pink = False
-    found_perple = False
-    found_yellow = False
-    found_green = False
-    
-    # 初始化攝像頭
+    video_map = {
+        'A': 'video_files/video_A.mp4',
+        'B': 'video_files/video_B.mp4',
+        'C': 'video_files/video_C.mp4',
+        'D': 'video_files/video_D.mp4',
+        'E': 'video_files/video_E.mp4',
+        'F': 'video_files/video_F.mp4',
+        'G': 'video_files/video_G.mp4',
+        'H': 'video_files/video_H.mp4',
+        'AB': 'video_files/video_AB.mp4',
+        'AC': 'video_files/video_AC.mp4',
+        'AD': 'video_files/video_AD.mp4',
+        'AE': 'video_files/video_AE.mp4',
+        'AF': 'video_files/video_AF.mp4',
+        'AG': 'video_files/video_AG.mp4',
+        'AH': 'video_files/video_AH.mp4',
+        'BC': 'video_files/video_BC.mp4',
+        'BD': 'video_files/video_BD.mp4',
+        'BE': 'video_files/video_BE.mp4',
+        'BF': 'video_files/video_BF.mp4',
+        'BG': 'video_files/video_BG.mp4',
+        'BH': 'video_files/video_BH.mp4',
+        'CD': 'video_files/video_CD.mp4',
+        'CE': 'video_files/video_CE.mp4',
+        'CF': 'video_files/video_CF.mp4',
+        'CG': 'video_files/video_CG.mp4',
+        'CH': 'video_files/video_CH.mp4',
+        'DE': 'video_files/video_DE.mp4',
+        'DF': 'video_files/video_DF.mp4',
+        'DG': 'video_files/video_DG.mp4',
+        'DH': 'video_files/video_DH.mp4',
+        'EF': 'video_files/video_EF.mp4',
+        'EG': 'video_files/video_EG.mp4',
+        'EH': 'video_files/video_EH.mp4',
+        'FG': 'video_files/video_FG.mp4',
+        'FH': 'video_files/video_FH.mp4',
+        'GH': 'video_files/video_GH.mp4',
+        'ABC': 'video_files/video_ABC.mp4',
+        'ABD': 'video_files/video_ABD.mp4',
+        'ABE': 'video_files/video_ABE.mp4',
+        'ABF': 'video_files/video_ABF.mp4',
+        'ABG': 'video_files/video_ABG.mp4',
+        'ABH': 'video_files/video_ABH.mp4',
+        'ACD': 'video_files/video_ACD.mp4',
+        'ACE': 'video_files/video_ACE.mp4',
+        'ACF': 'video_files/video_ACF.mp4',
+        'AFG': 'video_files/video_AFG.mp4',
+        'AFH': 'video_files/video_AFH.mp4',
+        'AGH': 'video_files/video_AGH.mp4',
+        'BCD': 'video_files/video_BCD.mp4',
+        'BCE': 'video_files/video_BCE.mp4',
+        'BCF': 'video_files/video_BCF.mp4',
+        'BCG': 'video_files/video_BCG.mp4',
+        'BCH': 'video_files/video_BCH.mp4',
+        'BDE': 'video_files/video_BDE.mp4',
+        'BDF': 'video_files/video_BDF.mp4',
+        'BDG': 'video_files/video_BDG.mp4',
+        'BDH': 'video_files/video_BDH.mp4',
+        'BEF': 'video_files/video_BEF.mp4',
+        'BEG': 'video_files/video_BEG.mp4',
+        'BEH': 'video_files/video_BEH.mp4',
+        'BFG': 'video_files/video_BFG.mp4',
+        'BFH': 'video_files/video_BFH.mp4',
+        'BGH': 'video_files/video_BGH.mp4',
+        'CDE': 'video_files/video_CDE.mp4',
+        'CDF': 'video_files/video_CDF.mp4',
+        'CDG': 'video_files/video_CDG.mp4',
+        'CDH': 'video_files/video_CDH.mp4',
+        'CEF': 'video_files/video_CEF.mp4',
+        'CEG': 'video_files/video_CEG.mp4',
+        'CEH': 'video_files/video_CEH.mp4',
+        'CFG': 'video_files/video_CFG.mp4',
+        'CFH': 'video_files/video_CFH.mp4',
+        'CGH': 'video_files/video_CGH.mp4',
+        'DEF': 'video_files/video_DEF.mp4',
+        'DEG': 'video_files/video_DEG.mp4',
+        'DEH': 'video_files/video_DEH.mp4',
+        'DFG': 'video_files/video_DFG.mp4',
+        'DFH': 'video_files/video_DFH.mp4',
+        'DGH': 'video_files/video_DGH.mp4',
+        'EFG': 'video_files/video_EFG.mp4',
+        'EFH': 'video_files/video_EFH.mp4',
+        'EGH': 'video_files/video_EGH.mp4',
+        'FGH': 'video_files/video_FGH.mp4'
+    }
+
+    color_ranges = {
+        'A': ([30, 100, 100], [40, 255, 255]),  # Yellow
+        'B': ([130, 50, 50], [140, 255, 255]),  # Purple
+        'C': ([0, 100, 100], [10, 255, 255]),  # Red
+        'D': ([150, 100, 100], [160, 255, 255]),  # Pink
+        'E': ([90, 50, 50], [100, 255, 255]),  # Cyan
+        'F': ([20, 100, 100], [30, 255, 255]),  # Light Blue
+        'G': ([10, 100, 100], [20, 255, 255]),  # Orange
+        'H': ([60, 100, 100], [70, 255, 255])   # Green
+    }
+
     cap = initialize_camera(camera_index)
     if cap is None:
         return
 
     while True:
-        # 讀取一帧影像
         ret, frame = cap.read()
         if not ret:
             print("Error: Unable to read a frame from the camera.")
             break
-        # 將影像轉換成HSV色彩空間
+        
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        colors_detected = []
 
-        lower_blue = np.array([91, 59, 135])  # 91 118 59 172 135 255
-        upper_blue = np.array([118, 172, 255])
-
-        lower_blue_green = np.array([73, 44, 145])  # 73 129 44 165 145 224
-        upper_blue_green = np.array([129, 165, 224])
-
-        lower_red = np.array([0, 48, 181])  # 0 21 48 130 181 243
-        upper_red = np.array([21, 130, 243])
-
-        lower_orange = np.array([6, 89, 196])  # 6 24 89 189 196 247
-        upper_orange = np.array([24, 189, 247])
-
-        lower_pink = np.array([137, 43, 183])  # 137 178 43 103 183 251
-        upper_pink = np.array([178, 103, 251])
-
-        lower_perple = np.array([146, 39, 124])  # 146 179 39 118 124 194
-        upper_perple = np.array([179, 118, 194])
-
-        lower_yellow = np.array([11, 55, 160])  # 11 30 55 153 160 225
-        upper_yellow = np.array([30, 153, 225])
-
-        lower_green = np.array([30, 84, 150])  # 30 49 84 137 150 217
-        upper_green = np.array([49, 137, 217])
-
-        mask_blue       = cv2.inRange(hsv, lower_blue, upper_blue)
-        mask_blue_green = cv2.inRange(hsv, lower_blue_green, upper_blue_green)
-        mask_red        = cv2.inRange(hsv, lower_red, upper_red)
-        mask_orange     = cv2.inRange(hsv, lower_orange, upper_orange)
-        mask_pink       = cv2.inRange(hsv, lower_pink, upper_pink)
-        mask_perple     = cv2.inRange(hsv, lower_perple, upper_perple)
-        mask_yellow     = cv2.inRange(hsv, lower_yellow, upper_yellow)
-        mask_green      = cv2.inRange(hsv, lower_green, upper_green)
-
-        contours_blue, _ = cv2.findContours(
-            mask_blue, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours_blue_green, _ = cv2.findContours(
-            mask_blue_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours_red, _ = cv2.findContours(
-            mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours_orange, _ = cv2.findContours(
-            mask_orange, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours_pink, _ = cv2.findContours(
-            mask_pink, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours_perple, _ = cv2.findContours(
-            mask_perple, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours_yellow, _ = cv2.findContours(
-            mask_yellow, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours_green, _ = cv2.findContours(
-            mask_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-        for contour in contours_blue:
-            area = cv2.contourArea(contour)
-            if area > threshold_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                found_blue = True
-            else:
-                found_blue = False
+        for color, (lower, upper) in color_ranges.items():
+            mask = cv2.inRange(hsv, np.array(lower), np.array(upper))
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            process_contours(contours, threshold_area, frame, colors_detected)
         
-        for contour in contours_blue_green:
-            area = cv2.contourArea(contour)
-            if area > threshold_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                found_blue_green = True
-            else:
-                found_blue_green = False
-                
-        for contour in contours_red:
-            area = cv2.contourArea(contour)
-            if area > threshold_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                found_red = True
-            else:
-                found_red = False       
-                
-        for contour in contours_orange:
-            area = cv2.contourArea(contour)
-            if area > threshold_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                found_orange = True
-            else:
-                found_orange = False        
-                
-        for contour in contours_pink:
-            area = cv2.contourArea(contour)
-            if area > threshold_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                found_pink = True
-            else:
-                found_pink = False        
-                
-        for contour in contours_perple:
-            area = cv2.contourArea(contour)
-            if area > threshold_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                found_perple = True
-            else:
-                found_perple = False
-                
-        for contour in contours_yellow:
-            area = cv2.contourArea(contour)
-            if area > threshold_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                found_yellow = True
-            else:
-                found_yellow = False        
+        # 決定要播放哪個影片
+        detected_colors = [color for color, detected in zip(color_ranges.keys(), colors_detected) if detected]
+        video_key = ''.join(detected_colors)
         
-        for contour in contours_green:
-            area = cv2.contourArea(contour)
-            if area > threshold_area:
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                found_green = True
-            else:
-                found_green = False  
-                
-        #範例
-        if found_blue :
-            play_video(video_path_01, play_speed)
-
-        found_blue = False
-        found_blue_green = False
-        found_red = False
-        found_orange = False
-        found_pink = False
-        found_perple = False
-        found_yellow = False
-        found_green = False
+        if video_key in video_map:
+            play_video(video_map[video_key], play_speed)
 
         cv2.imshow('Processed Frame, press q to leave', frame)
         if cv2.waitKey(20) & 0xFF == ord('q'):
@@ -191,6 +176,5 @@ def main():
     release_camera(cap)
     cv2.destroyAllWindows()
 
-# 主程式
 if __name__ == "__main__":
     main()
