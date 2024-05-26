@@ -24,7 +24,7 @@ def play_video(file_name, speed):
 def initialize_camera(camera_index):
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
-        print("Error: Unable to open the camera.")
+        print(f"Error: Unable to open the camera {camera_index}.")
         return None
     return cap
 
@@ -32,19 +32,28 @@ def release_camera(cap):
     if cap is not None:
         cap.release()
 
-def process_contours(contours, threshold_area, frame, color_detected):
+def apply_mask(frame, mask):
+    return cv2.bitwise_and(frame, frame, mask=mask)
+
+def process_contours(contours, threshold_area, frame):
     for contour in contours:
         if cv2.contourArea(contour) > threshold_area:
             x, y, w, h = cv2.boundingRect(contour)
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            color_detected.append(True)
             return True
-    color_detected.append(False)
     return False
 
+def load_and_resize_mask(mask_path, frame_shape):
+    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+    if mask is None:
+        print(f"Error: Unable to load the mask image from {mask_path}.")
+        return None
+    return cv2.resize(mask, (frame_shape[1], frame_shape[0]))
+
 def main():
-    camera_index = 0
-    threshold_area = 100  # 最小區域閾值設定
+    camera_indices = [1, 2]  # 使用的攝像頭索引
+    mask_paths = ['img_files/mask1.png', 'img_files/mask2.png']  # 對應的遮罩文件路徑
+    threshold_area = 500  # 最小區域閾值設定
     play_speed = 30
 
     video_map = {
@@ -134,46 +143,67 @@ def main():
     }
 
     color_ranges = {
-        'A': ([30, 100, 100], [40, 255, 255]),  # Yellow
-        'B': ([130, 50, 50], [140, 255, 255]),  # Purple
-        'C': ([0, 100, 100], [10, 255, 255]),  # Red
-        'D': ([150, 100, 100], [160, 255, 255]),  # Pink
-        'E': ([90, 50, 50], [100, 255, 255]),  # Cyan
-        'F': ([20, 100, 100], [30, 255, 255]),  # Light Blue
-        'G': ([10, 100, 100], [20, 255, 255]),  # Orange
-        'H': ([60, 100, 100], [70, 255, 255])   # Green
+        'A': ([18, 80, 155], [38, 194, 255]),  # Yellow
+        'B': ([105, 18, 53], [155, 80, 158]),  # Purple
+        'C': ([3, 109, 109], [7, 211, 255]),  # Red
+        'D': ([0, 50, 137], [6, 119, 255]),  # Pink
+        'E': ([60, 40, 57], [93, 220, 249]),  # Cyan
+        'F': ([91, 54, 110], [132, 255, 200]),  # Light Blue
+        'G': ([8, 122, 154], [18, 200, 255]),  # Orange
+        'H': ([37, 62, 70], [55, 131, 220])   # Green
     }
 
-    cap = initialize_camera(camera_index)
-    if cap is None:
+    caps = [initialize_camera(index) for index in camera_indices]
+    if any(cap is None for cap in caps):
+        return
+
+    masks = [load_and_resize_mask(path, (int(caps[0].get(cv2.CAP_PROP_FRAME_HEIGHT)), int(caps[0].get(cv2.CAP_PROP_FRAME_WIDTH)))) for path in mask_paths]
+    if any(mask is None for mask in masks):
+        for cap in caps:
+            release_camera(cap)
         return
 
     while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("Error: Unable to read a frame from the camera.")
-            break
+        frames = []
+        for cap, mask in zip(caps, masks):
+            ret, frame = cap.read()
+            if not ret:
+                print("Error: Unable to read a frame from the camera.")
+                return
+            masked_frame = apply_mask(frame, mask)
+            frames.append(masked_frame)
+
+        # 合併兩個鏡頭的畫面
+        combined_frame = np.hstack(frames)
         
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        # 應用高斯模糊來減少雜訊
+        blurred = cv2.GaussianBlur(combined_frame, (11, 11), 0)
+        
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
         colors_detected = []
 
         for color, (lower, upper) in color_ranges.items():
-            mask = cv2.inRange(hsv, np.array(lower), np.array(upper))
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            process_contours(contours, threshold_area, frame, colors_detected)
+            color_mask = cv2.inRange(hsv, np.array(lower), np.array(upper))
+            contours, _ = cv2.findContours(color_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            detected = process_contours(contours, threshold_area, combined_frame)
+            colors_detected.append(detected)
         
         # 決定要播放哪個影片
         detected_colors = [color for color, detected in zip(color_ranges.keys(), colors_detected) if detected]
         video_key = ''.join(detected_colors)
-        
+
         if video_key in video_map:
             play_video(video_map[video_key], play_speed)
 
-        cv2.imshow('Processed Frame, press q to leave', frame)
+        # 顯示應用遮罩後的影像
+        cv2.imshow('Masked Frame', combined_frame)
+        cv2.imshow('Processed Frame, press q to leave', combined_frame)
+        
         if cv2.waitKey(20) & 0xFF == ord('q'):
             break
 
-    release_camera(cap)
+    for cap in caps:
+        release_camera(cap)
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":

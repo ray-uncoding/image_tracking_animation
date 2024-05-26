@@ -18,6 +18,7 @@
 ```bash
 pip install opencv-python numpy
 
+以下是資料夾結構:
 .
 ├── main.py
 ├── video_files
@@ -25,3 +26,12 @@ pip install opencv-python numpy
 │   ├── video_B.mp4
 │   ├── ...
 └── README.md
+
+
+注意事項：
+1. 下載python時, 記得去檢視進階系統設定去全域變數把使用者設定跟系統設定的path新增出python exe的路徑跟script的路徑, 像以下這樣
+    C:\Users\ray62\AppData\Local\Programs\Python\Python312
+    C:\Users\ray62\AppData\Local\Programs\Python\Python312\Scripts
+2. 開啟vscode後第一件事情，下載這個
+    pip install opencv-python
+3.
